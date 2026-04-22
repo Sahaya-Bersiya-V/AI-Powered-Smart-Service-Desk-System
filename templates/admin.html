@@ -1,0 +1,478 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="theme-admin">
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="logo">SMART DESK</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+  </div>
+</div>
+
+<div class="main-container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Admin Dashboard</h2>
+
+    <div class="sidebar-item" onclick="loadSection('dashboard')">Dashboard</div>
+    <div class="sidebar-item" onclick="loadSection('users')">User Management</div>
+    <div class="sidebar-item" onclick="loadSection('agents')">Agent Management</div>
+    <div class="sidebar-item" onclick="loadSection('kb')">KB Management</div>
+    <div class="sidebar-item" onclick="loadSection('faq')">FAQ Management</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="content-card" id="mainContent">
+
+      <!-- DEFAULT -->
+      <h2>Welcome Admin 👋</h2>
+      <p>Select a module from the sidebar.</p>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_FAQ = "/admin/faq";
+
+/* LOAD SECTIONS */
+function loadSection(section) {
+  const content = document.getElementById("mainContent");
+
+  /* DASHBOARD */
+  if (section === "dashboard") {
+    content.innerHTML = `
+      <h2>Welcome Admin 👋</h2>
+      <p>Select a module from the sidebar.</p>
+    `;
+  }
+
+  /* USER MANAGEMENT */
+  else if (section === "users") {
+    content.innerHTML = `
+      <h2>User Management</h2>
+    <div class="table-container">
+      <table id="userTable">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    `;
+
+    loadUsers();
+  }
+
+  /* FAQ MANAGEMENT */
+  else if (section === "faq") {
+    content.innerHTML = `
+  <div class="faq-header">
+    <h2>FAQ Management</h2>
+
+    <input 
+      type="text" 
+      id="faqSearch" 
+      placeholder="Search FAQs..." 
+      onkeyup="filterFAQs()"
+    >
+  </div>
+
+  <div id="messageBox" class="message"></div>
+
+  <div class="add-box">
+    <input id="question" placeholder="Enter question">
+    <input id="answer" placeholder="Enter answer">
+    <button class="btn primary" onclick="addFAQ()">Add FAQ</button>
+  </div>
+
+  <div id="faqContainer"></div>
+`;
+
+    loadFAQs();
+  }
+
+  /* KB MANAGEMENT */
+  else if (section === "kb") {
+    content.innerHTML = `
+      <h2>Knowledge Base Management</h2>
+
+      <div class="upload-card">
+        <form id="uploadForm">
+          <input type="file" id="fileInput" required>
+          <button class="upload-btn">Upload PDF</button>
+        </form>
+        <p id="message"></p>
+      </div>
+
+      <div class="table-card">
+        <table id="kbTable">
+          <thead>
+            <tr>
+              <th>PDF Name</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+
+    loadKB();
+    setupUpload();
+  }
+
+else if (section === "agents") {
+  content.innerHTML = `
+    <div class="header-row">
+      <h2>Agent Management</h2>
+      <button class="btn primary" onclick="openAgentModal()">+ Create Agent</button>
+    </div>
+    <div id="messageBox" class="message"></div> 
+    <div class="table-container">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="agentTable"></tbody>
+    </table>
+    </div>
+
+    <!-- MODAL -->
+    <div id="agentModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeAgentModal()">&times;</span>
+        <h3>Create Agent</h3>
+
+        <input id="agent_username" placeholder="Username">
+        <input id="agent_email" placeholder="Email">
+        <input id="agent_password" placeholder="Password" type="password">
+        <select id="department">
+        <option value="IT">IT</option>
+        <option value="HR">HR</option>
+        <option value="Facilities">Facilities</option>
+        </select>
+
+        <button class="btn primary" onclick="createAgent()">Create</button>
+      </div>
+    </div>
+  `;
+
+  loadAgents();
+}}
+function editAgent(id, username, email, department) {
+  openAgentModal();
+
+  document.getElementById("agent_username").value = username;
+  document.getElementById("agent_email").value = email;
+  document.getElementById("agent_password").value = ""; 
+  document.getElementById("department").value = department;
+
+  // change button text
+  const btn = document.querySelector("#agentModal .btn");
+  btn.innerText = "Update";
+
+  // change button action
+  btn.onclick = function () {
+    updateAgent(id);
+  };
+}
+
+async function updateAgent(id) {
+  const username = document.getElementById("agent_username").value;
+  const email = document.getElementById("agent_email").value;
+  const department = document.getElementById("department").value;
+
+  await fetch(`/admin/agents/update/${id}?username=${username}&email=${email}&department=${department}`, {
+    method: "PUT"
+  });
+
+  showMessage("Agent updated successfully ");
+  closeAgentModal();
+  loadAgents();
+}
+function filterFAQs() {
+  const search = document.getElementById("faqSearch").value.toLowerCase();
+  const cards = document.querySelectorAll(".faq-card");
+
+  cards.forEach(card => {
+    const text = card.innerText.toLowerCase();
+
+    if (text.includes(search)) {
+      card.style.display = "block";
+    } else {
+      card.style.display = "none";
+    }
+  });
+}
+
+async function loadAgents() {
+  const res = await fetch("/api/admin/users/agents"); 
+  const agents = await res.json();
+
+  const tbody = document.getElementById("agentTable");
+  tbody.innerHTML = "";
+
+  if (agents.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">No agents found</td></tr>`;
+    return;
+  }
+
+  agents.forEach(agent => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${agent.username}</td>
+        <td>${agent.email}</td>
+        <td>
+          <span class="status ${agent.status}">
+            ${agent.status}
+          </span>
+        </td>
+        <td>
+  <!-- EDIT BUTTON -->
+  <button class="btn primary" onclick="editAgent(${agent.id}, '${agent.username}', '${agent.email}', '${agent.department}')">
+    Edit
+  </button>
+
+  <!-- ACTIVATE / DEACTIVATE -->
+  ${
+    agent.status === "active"
+      ? `<button class="btn danger" onclick="updateAgentStatus(${agent.id}, 'blocked')">Deactivate</button>`
+      : `<button class="btn success" onclick="updateAgentStatus(${agent.id}, 'active')">Activate</button>`
+  }
+</td>
+      </tr>
+    `;
+  });
+}
+
+
+/* UPDATE STATUS */
+async function updateAgentStatus(id, status) {
+  await fetch(`/api/admin/users/agents/${id}/status`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ status })
+  });
+
+  loadAgents();
+}
+
+
+
+function openAgentModal() {
+  document.getElementById("agentModal").style.display = "block";
+
+ 
+  document.getElementById("agent_username").value = "";
+  document.getElementById("agent_email").value = "";
+  document.getElementById("agent_password").value = "";
+
+  const btn = document.querySelector("#agentModal .btn");
+  btn.innerText = "Create";
+  btn.onclick = createAgent;
+}
+
+
+function closeAgentModal() {
+  document.getElementById("agentModal").style.display = "none";
+}
+
+async function createAgent() {
+  const username = document.getElementById("agent_username").value.trim();
+  const email = document.getElementById("agent_email").value.trim();
+  const password = document.getElementById("agent_password").value.trim();
+  const d = document.getElementById("department").value.trim();
+
+  if (!username || !email || !password) {
+    showMessage("Fill all fields","error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/admin/agents/create?username=${username}&email=${email}&password=${password}&department=${d}`, {
+      method: "POST"
+    });
+
+    const data = await res.json();
+
+   
+    if (!res.ok) {
+      showMessage(data.detail,"error");  
+      return;
+    }
+
+  
+    showMessage("Agent created successfully ✅");
+
+    closeAgentModal();
+    loadAgents();
+
+  } catch (err) {
+    showMessage("Server error");
+  }
+}
+/* USERS  */
+async function loadUsers() {
+  const res = await fetch("/api/admin/users/");
+  const users = await res.json();
+
+  const tbody = document.querySelector("#userTable tbody");
+  tbody.innerHTML = "";
+
+  users.forEach(user => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.status}</td>
+        <td>
+          <button onclick="updateStatus(${user.id}, '${user.status === 'active' ? 'blocked' : 'active'}')">
+            ${user.status === 'active' ? 'Block' : 'Activate'}
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function updateStatus(id, status) {
+  await fetch(`/api/admin/users/${id}/status`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({status})
+  });
+  loadUsers();
+}
+
+function showMessage(msg, type="success") {
+  const box = document.getElementById("messageBox");
+  if (!box) {
+  alert(msg);
+  return;
+}
+  box.innerText = msg;
+  box.style.display = "block";
+
+  if (type === "error") {
+    box.style.background = "#e74c3c";
+  } else {
+    box.style.background = "#2ecc71";
+  }
+
+  setTimeout(() => {
+    box.style.display = "none";
+  }, 3000);
+}
+
+async function loadFAQs() {
+  const res = await fetch(API_FAQ);
+  const data = await res.json();
+
+  let html = "";
+  data.forEach(faq => {
+    html += `
+      <div class="faq-card">
+        <input id="q-${faq.id}" value="${faq.question}" disabled>
+        <textarea id="a-${faq.id}" disabled>${faq.answer}</textarea>
+
+       
+        <div class="faq-actions">
+  <button class="edit-btn" onclick="enableEdit(${faq.id})">Edit</button>
+  <button class="save-btn" onclick="saveEdit(${faq.id})">Save</button>
+  <button class="delete-btn" onclick="deleteFAQ(${faq.id})">Delete</button>
+</div>
+      </div>
+    `;
+  });
+
+  document.getElementById("faqContainer").innerHTML = html;
+}
+
+async function addFAQ() {
+  let q = document.getElementById("question").value.trim();
+  let a = document.getElementById("answer").value.trim();
+
+  if (!q || !a) return showMessage("Fill all fields");
+
+  await fetch(`${API_FAQ}?question=${q}&answer=${a}`, { method: "POST" });
+  showMessage("Added successfully");
+  loadFAQs();
+}
+
+function enableEdit(id) {
+  document.getElementById(`q-${id}`).disabled = false;
+  document.getElementById(`a-${id}`).disabled = false;
+}
+
+async function saveEdit(id) {
+  let q = document.getElementById(`q-${id}`).value;
+  let a = document.getElementById(`a-${id}`).value;
+
+  await fetch(`${API_FAQ}/${id}?question=${q}&answer=${a}`, { method: "PUT" });
+  showMessage("Updated");
+  loadFAQs();
+}
+
+async function deleteFAQ(id) {
+  await fetch(`${API_FAQ}/${id}`, { method: "DELETE" });
+  loadFAQs();
+}
+
+/*KB*/
+async function loadKB() {
+  const res = await fetch("/kb/files"); 
+  const files = await res.json();
+
+  const tbody = document.querySelector("#kbTable tbody");
+  tbody.innerHTML = "";
+
+  files.forEach(file => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${file}</td>
+        <td><button onclick="deleteFile('${file}')">Delete</button></td>
+      </tr>
+    `;
+  });
+}
+
+function setupUpload() {
+  document.getElementById("uploadForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("file", document.getElementById("fileInput").files[0]);
+
+    await fetch("/kb/upload", { method:"POST", body: formData });
+
+    loadKB();
+  });
+}
+
+async function deleteFile(file) {
+  await fetch(`/kb/delete/${file}`, { method:"POST" });
+  loadKB();
+}
+</script>
+</body>
+</html>

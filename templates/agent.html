@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Agent Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="theme-agent">
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="logo">SMART DESK</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+  </div>
+</div>
+
+<div class="main-container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Agent</h2>
+
+    <div class="sidebar-item" onclick="loadSection('dashboard')">Dashboard</div>
+    <div class="sidebar-item" onclick="loadSection('open')">Open Tickets</div>
+    <div class="sidebar-item" onclick="loadSection('closed')">Closed Tickets</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="content-card" id="mainContent"></div>
+  </div>
+
+</div>
+
+<script>
+  const department = localStorage.getItem("department") || "IT";
+async function loadSection(section) {
+  const content = document.getElementById("mainContent");
+
+  /* DASHBOARD */
+  if (section === "dashboard") {
+    
+    const res = await fetch(`/tickets/dashboard/${department}`);
+  const data = await res.json();
+
+  content.innerHTML = `
+  <h2>Welcome Agent 👋</h2>
+
+  <div class="stats">
+    <div class="stat-card total">
+      <h3>${data.total}</h3>
+      <p>Total Tickets</p>
+    </div>
+
+    <div class="stat-card open">
+      <h3>${data.open}</h3>
+      <p>Open Tickets</p>
+    </div>
+
+    <div class="stat-card closed">
+      <h3>${data.closed}</h3>
+      <p>Closed Tickets</p>
+    </div>
+
+    <div class="stat-card today">
+      <h3>${data.today}</h3>
+      <p>Today's Tickets</p>
+    </div>
+  </div>
+`;
+  }
+  else if (section === "open") {
+
+  const res = await fetch(`/tickets/agent/${department}`);
+  const data = await res.json();
+
+  const openTickets = data.filter(t => t.status === "open");
+
+  content.innerHTML = `
+    <h2>Open Tickets</h2>
+
+    <select id="priorityFilter" onchange="filterTickets()">
+      <option value="">All</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+
+    <div class="table-container">
+      <table class="ticket-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Subject</th>
+            <th>Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="ticketTableBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  renderTable(openTickets);
+}
+
+  /* CLOSED */
+  else if (section === "closed") {
+   
+    
+    const res = await fetch(`/tickets/agent/${department}`);
+    const data = await res.json();
+
+    const closedTickets = data.filter(t => t.status === "resolved");
+
+    content.innerHTML = `
+      <h2>Closed Tickets</h2>
+      <div class="closed-container" id="closedList"></div>
+    `;
+
+    const container = document.getElementById("closedList");
+
+    closedTickets.forEach(t => {
+      container.innerHTML += `
+        <div class="ticket-card">
+          <h4>${t.subject}</h4>
+          <p>${t.description || "No description provided"}</p>
+          <p><b>Reply:</b> ${t.reply || "No reply"}</p>
+        </div>
+      `;
+    });
+  }
+}
+
+/* VIEW TICKET */
+async function viewTicket(id) {
+  const ticket = currentTickets.find(t => t.id == id);
+  const content = document.getElementById("mainContent");
+
+  content.innerHTML = `
+  <button class="btn back-btn" onclick="loadSection('open')">⬅ Back</button>
+    <h2>Ticket #${ticket.id}</h2>
+
+    <p><b>Subject:</b> ${ticket.subject}</p>
+    <p><b>Description:</b> ${ticket.description || "No description provided"}</p>
+
+    <p><b>Queue:</b> ${ticket.queue || "Detecting..."}</p>
+    <p><b>Priority:</b> ${ticket.priority || "Detecting..."}</p>
+    <p><b>Issue Summary:</b> ${ticket.summary || "No file uploaded"}</p>
+
+    <textarea id="replyBox" placeholder="Write response...">${ticket.reply ? ticket.reply: ""}</textarea>
+
+    <br><br>
+    <button class="btn primary" onclick="sendReply(${ticket.id})">
+      Submit Response
+    </button>
+  `;
+}
+
+/* SEND REPLY */
+async function sendReply(id) {
+  const reply = document.getElementById("replyBox").value;
+
+  await fetch(`/tickets/reply/${id}?reply=${encodeURIComponent(reply)}`, {
+    method: "PUT"
+  });
+
+  alert("Response sent");
+  loadSection("open");
+}
+
+/* INITIAL LOAD */
+loadSection("dashboard");
+let currentTickets = [];
+function renderTable(data) {
+  const tbody = document.getElementById("ticketTableBody");
+  tbody.innerHTML = "";
+
+  currentTickets = data;
+
+  data.forEach(t => {
+    tbody.innerHTML += `
+      <tr onclick="viewTicket(${t.id})">
+        <td>${t.id}</td>
+        <td>${t.subject}</td>
+        <td>${t.priority || "-"}</td>
+        <td>${t.status}</td>
+      </tr>
+    `;
+  });
+}
+async function filterTickets() {
+  const priority = document.getElementById("priorityFilter").value;
+  const department = localStorage.getItem("department");
+  let url = `/tickets/filter?department=${department}`;
+
+  if (priority) {
+    url += `&priority=${priority}`;
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+    if (!Array.isArray(data)) {
+    console.error("API Error:", data);
+    alert("Something went wrong");
+    return;
+  }
+
+  renderTable(data);
+}
+</script>
+
+</body>
+</html>

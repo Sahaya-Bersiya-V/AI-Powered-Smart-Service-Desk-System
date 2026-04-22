@@ -1,0 +1,155 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+:root {
+  --auth-color: #6c63ff;
+  --radius: 12px;
+  --shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.theme-auth {
+  background: #f4f6f8;
+}
+
+.auth-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-card {
+  width: 360px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--auth-color);
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.auth-card input:focus {
+  outline: none;
+  border-color: var(--auth-color);
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 30px;
+  border: none;
+  background: var(--auth-color);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.auth-card button:hover {
+  opacity: 0.9;
+}
+
+.auth-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.auth-link a {
+  text-decoration: none;
+  color: var(--auth-color);
+  font-size: 14px;
+}
+
+.auth-link a:hover {
+  text-decoration: underline;
+}
+body.theme-auth {
+  background: linear-gradient(135deg, #5a6fd6, #7a6ee6);
+  height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.auth-card {
+  background: white;
+  padding: 45px 40px;
+  border-radius: 18px;
+  width: 400px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.auth-card h2 {
+  color: #4f6ef7;
+  margin-bottom: 20px;
+  font-size: 26px;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 13px;
+  margin: 12px 0;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+
+  background: white;   
+  color: #333;
+}
+
+.auth-card input:focus {
+  border-color: #4f6ef7;
+  outline: none;
+  box-shadow: 0 0 6px rgba(79,110,247,0.3);
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #4f6ef7, #6a5af9);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.auth-card button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.auth-link {
+  margin-top: 15px;
+}
+
+.auth-link a {
+  text-decoration: none;
+  color: #4f6ef7;
+  font-size: 14px;
+}

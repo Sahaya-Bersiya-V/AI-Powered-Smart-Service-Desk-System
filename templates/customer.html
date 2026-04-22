@@ -1,0 +1,231 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="theme-customer">
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="logo">SMART DESK</div>
+  <div class="nav-links">
+    <button class="btn primary" onclick="goHome()">Home</button>
+  </div>
+</div>
+
+<div class="main-container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Customer</h2>
+
+    <div class="sidebar-item" onclick="loadSection('home')">Dashboard</div>
+    <div class="sidebar-item" onclick="loadSection('new')">New Ticket</div>
+    <div class="sidebar-item" onclick="loadSection('view')">View Tickets</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <div class="content-card" id="mainContent">
+    </div>
+  </div>
+
+</div>
+
+<script>
+const USER_ID = localStorage.getItem("user_id");
+const USERNAME = localStorage.getItem("username");
+
+if (!USER_ID) {
+  alert("Session expired. Login again.");
+  window.location.href = "/login";
+}
+
+/*  LOAD SECTION */
+function loadSection(section) {
+  const content = document.getElementById("mainContent");
+
+  /* DASHBOARD */
+  if (section === "home") {
+    content.innerHTML = `
+      <h2>Welcome ${USERNAME} 👋</h2>
+      <p>Kindly raise a ticket for your problem.</p>
+    `;
+  }
+
+  /* NEW TICKET */
+  else if (section === "new") {
+    
+    content.innerHTML = `
+  <h2>Create New Ticket</h2>
+
+  <div class="ticket-form">
+
+    <div class="form-group">
+      <label>Subject</label>
+      <input id="subject" placeholder="Enter subject">
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="description" placeholder="Describe your issue"></textarea>
+    </div>
+
+    <div class="form-group">
+  <label>Attach File</label>
+
+  <div class="file-box">
+    <input type="file" id="file" onchange="previewFile()">
+    <div id="filePreview" class="file-preview"></div>
+  </div>
+</div>
+
+    <div class="form-actions">
+      <button class="btn primary" onclick="createTicket()">Submit Ticket</button>
+    </div>
+
+  </div>
+`;
+  }
+
+  /* VIEW TICKETS */
+  else if (section === "view") {
+    content.innerHTML = `
+      <h2>My Tickets</h2>
+
+<div class="ticket-scroll">
+  <div id="ticketList"></div>
+</div>
+    `;
+
+    loadTickets();
+  }
+}
+
+
+async function createTicket() {
+  const subject = document.getElementById("subject").value;
+  const description = document.getElementById("description").value;
+  const fileInput = document.getElementById("file");
+
+  const formData = new FormData();
+  formData.append("user_id", USER_ID);
+  formData.append("subject", subject);
+  formData.append("description", description);
+
+  if (fileInput.files[0]) {
+    formData.append("file", fileInput.files[0]);
+  }
+
+  await fetch("/tickets/create", {
+    method: "POST",
+    body: formData
+  });
+
+  alert("Ticket created");
+}
+/* LOAD TICKETS  */
+async function loadTickets() {
+  const res = await fetch(`/tickets/${USER_ID}`);
+  const data = await res.json();
+
+  let html = "";
+
+  if (data.length === 0) {
+    html = `<p>You haven't raised any ticket yet.</p>`;
+  }
+
+  data.forEach(t => {
+    html += `
+      <div class="ticket-card" onclick="viewTicket(${t.id})">
+        <h4>${t.subject}</h4>
+        <p>Status: 
+          <span class="${t.reply ? 'status-resolved' : 'status-open'}">
+            ${t.reply ? "Responded" : "Pending"}
+          </span>
+        </p>
+      </div>
+    `;
+  });
+
+  document.getElementById("ticketList").innerHTML = html;
+}
+
+/* VIEW SINGLE TICKET */
+async function viewTicket(id) {
+  const res = await fetch(`/tickets/${USER_ID}`);
+  const tickets = await res.json();
+
+  const ticket = tickets.find(t => t.id === id);
+
+  document.getElementById("mainContent").innerHTML = `
+    <h2>${ticket.subject}</h2>
+
+    <p><b>Description:</b> ${ticket.description}</p>
+
+    <p><b>Status:</b> ${ticket.status}</p>
+
+    <p><b>Reply:</b> ${ticket.reply || "No response yet"}</p>
+
+    <button class="btn" onclick="loadSection('view')">⬅ Back</button>
+  `;
+}
+
+/* HOME BUTTON */
+function goHome() {
+  window.location.href = "/";
+}
+
+/* INITIAL LOAD */
+loadSection("home");
+function previewFile() {
+  const fileInput = document.getElementById("file");
+  const preview = document.getElementById("filePreview");
+
+  const file = fileInput.files[0];
+
+  if (!file) {
+    preview.innerHTML = "";
+    return;
+  }
+
+  const fileType = file.type;
+
+  // IMAGE PREVIEW
+  if (fileType.startsWith("image/")) {
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      preview.innerHTML = `
+        <div class="preview-card">
+          <img src="${e.target.result}" class="preview-img"/>
+          <button class="remove-btn" onclick="removeFile()">✖</button>
+        </div>
+      `;
+    };
+
+    reader.readAsDataURL(file);
+  } else {
+    // FILE NAME PREVIEW
+    preview.innerHTML = `
+      <div class="preview-file">
+         ${file.name}
+        <button class="remove-btn" onclick="removeFile()">✖</button>
+      </div>
+    `;
+  }
+}
+
+// REMOVE FILE
+function removeFile() {
+  document.getElementById("file").value = "";
+  document.getElementById("filePreview").innerHTML = "";
+}
+</script>
+
+</body>
+</html>
