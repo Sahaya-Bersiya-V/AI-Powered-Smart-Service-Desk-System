@@ -9,5 +9,5 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False)
-    status = Column(String(20), default="active")  # True = active, False = disabled
+    status = Column(String(20), default="active")  
     department = Column(String(20))
