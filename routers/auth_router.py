@@ -71,8 +71,14 @@ from fastapi import HTTPException
 
 @router.post("/login")
 def login(data:LoginRequest, db: Session = Depends(get_db)):
+    print("LOGIN EMAIL:", data.email)
+    print("INPUT PASSWORD:", data.password)
 
     user = db.query(User).filter(User.email == data.email).first()
+    print("USER FOUND:", user)
+
+    if user:
+        print("DB PASSWORD:", user.password)
     from services.auth_service import verify_password
 
     if not user or not verify_password(data.password, user.password):

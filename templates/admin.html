@@ -201,10 +201,16 @@ async function updateAgent(id) {
   const username = document.getElementById("agent_username").value;
   const email = document.getElementById("agent_email").value;
   const department = document.getElementById("department").value;
+  const password = document.getElementById("agent_password").value.trim();
+  
+  // });
+  let url = `/admin/agents/update/${id}?username=${username}&email=${email}&department=${department}`;
 
-  await fetch(`/admin/agents/update/${id}?username=${username}&email=${email}&department=${department}`, {
-    method: "PUT"
-  });
+if (password) {
+  url += `&password=${password}`;
+}
+
+await fetch(url, { method: "PUT" });
 
   showMessage("Agent updated successfully ");
   closeAgentModal();

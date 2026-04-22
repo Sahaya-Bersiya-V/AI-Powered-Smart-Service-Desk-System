@@ -38,6 +38,7 @@ def update_agent(
     username: str,
     email: str,
     department: str,
+    password: str = None,
     db: Session = Depends(get_db)
 ):
     agent = db.query(User).filter(User.id == agent_id, User.role == "agent").first()
@@ -48,6 +49,9 @@ def update_agent(
     agent.username = username
     agent.email = email
     agent.department = department
+
+    if password and password.strip() != "":
+        agent.password = hash_password(password)
 
     db.commit()
 
